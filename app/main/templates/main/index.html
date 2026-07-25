@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+
+{% block title %}AppEnzo{% endblock %}
+
+{% block content %}
+  <h1>Inicio</h1>
+  <ul class="card-list">
+    <li><a href="{{ url_for('cards.list_cards') }}">Tarjetas</a></li>
+  </ul>
+{% endblock %}

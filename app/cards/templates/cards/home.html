@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+
+{% block title %}{{ card.name }} — AppEnzo{% endblock %}
+
+{% block breadcrumbs %}
+  <a href="{{ url_for('main.index') }}">AppEnzo</a>
+  <span class="sep">/</span>
+  <a href="{{ url_for('cards.list_cards') }}">Tarjetas</a>
+  <span class="sep">/</span>
+  <span class="current">{{ card.name }}</span>
+{% endblock %}
+
+{% block content %}
+  {% include "cards/_tabs.html" %}
+
+  <h1>{{ card.name }}</h1>
+  {% if card.bank %}
+    <p class="muted" style="margin-top: 0;">
+      {{ card.bank }} {% if card.last_four_digits %}····{{ card.last_four_digits }}{% endif %}
+    </p>
+  {% endif %}
+
+  <div class="summary-grid">
+    {% for currency, totals in view.totals.items() %}
+      {% if totals.in or totals.out or totals.balance %}
+        <div class="summary-tile">
+          <div class="label">{{ currency }} entradas</div>
+          <div class="value amount-in">{{ "%.2f"|format(totals.in) }}</div>
+        </div>
+        <div class="summary-tile">
+          <div class="label">{{ currency }} salidas</div>
+          <div class="value amount-out">{{ "%.2f"|format(totals.out) }}</div>
+        </div>
+        <div class="summary-tile">
+          <div class="label">{{ currency }} saldo</div>
+          <div class="value">{{ "%.2f"|format(totals.balance) }}</div>
+        </div>
+      {% endif %}
+    {% endfor %}
+  </div>
+
+  <p class="muted">
+    Resumen actual:
+    <a href="{{ url_for('cards.statement_detail', card_id=card.id, statement_id=view.statement.id) }}">{{ view.statement.period.strftime("%Y-%m") }}</a>
+  </p>
+
+  <h2>Movimientos de este mes</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Id</th><th>Fecha</th><th>Tipo</th><th>Descripción</th><th>Cuota</th>
+        <th class="amount">Monto</th><th class="amount">Saldo</th><th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for e in view.entries %}
+        <tr>
+          <td class="muted">{{ e.id }}</td>
+          <td>{{ e.date.strftime("%d-%m-%Y") }}</td>
+          <td>
+            <span class="badge {{ 'badge-payment' if e.entry_type == 'payment' else 'badge-expense' }}">
+              {{ "Pago" if e.entry_type == "payment" else ("Cargo" if e.entry_type == "charge" else "Gasto") }}
+            </span>
+          </td>
+          <td>{{ e.description or "" }}</td>
+          <td class="muted">{{ e.installment_number or "" }}</td>
+          <td class="amount {{ 'amount-in' if e.entry_type == 'payment' else 'amount-out' }}">
+            {{ e.currency }} {{ "%.2f"|format(e.amount) }}
+          </td>
+          <td class="amount">{{ e.currency }} {{ "%.2f"|format(e.balance_after) }}</td>
+          <td>
+            <form method="post" class="inline"
+                  action="{{ url_for('cards.delete_entry', card_id=card.id, statement_id=view.statement.id, entry_id=e.id) }}"
+                  onsubmit="return confirm('¿Eliminar este movimiento?')">
+              <input type="hidden" name="next" value="{{ url_for('cards.card_detail', card_id=card.id) }}" />
+              <button type="submit" class="btn-secondary">Eliminar</button>
+            </form>
+          </td>
+        </tr>
+      {% else %}
+        <tr><td colspan="8" class="empty-state">Sin movimientos todavía.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <div class="card" style="max-width: 420px; margin: 32px auto 0;">
+    <h2 style="margin-top: 0; text-align: center;">Agregar movimiento</h2>
+    <form method="post" action="{{ url_for('cards.new_entry', card_id=card.id) }}">
+      <label>
+        Tipo
+        <select name="entry_type">
+          <option value="expense">Gasto</option>
+          <option value="payment">Pago</option>
+        </select>
+      </label>
+      <label>
+        Moneda
+        <select name="currency">
+          <option value="ARS">ARS</option>
+          <option value="USD">USD</option>
+        </select>
+      </label>
+      <label>
+        Monto total
+        <input type="text" name="amount" required />
+      </label>
+      <label>
+        Descripción
+        <input type="text" name="description" />
+      </label>
+      <label>
+        Fecha
+        <input type="text" name="date" value="{{ today }}" placeholder="dd-mm-aaaa" pattern="\d{2}-\d{2}-\d{4}" inputmode="numeric" maxlength="10" data-date-mask required />
+      </label>
+      <label>
+        Cuotas (solo para gastos; la 1ra se ubica sola según la fecha, las siguientes son consecuentes)
+        <input type="number" name="installment_count" min="1" value="1" />
+      </label>
+      <button type="submit" style="align-self: center;">Cargar movimiento</button>
+    </form>
+  </div>
+{% endblock %}

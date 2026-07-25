@@ -1,0 +1,269 @@
+/* ==========================================================================
+   TOKENS — variables base del sistema
+   ========================================================================== */
+
+:root {
+  /* --- Color: modo claro (default) --- */
+  --color-primary: #2E5FC7;       /* botones, enlaces, elementos activos */
+  --color-text-primary: #323332;  /* titulos, textos importantes */
+  --color-bg-secondary: #F0F0F0;  /* secciones, tarjetas, fondos alternativos */
+  --color-bg-primary: #FFFFFF;    /* fondo general de la interfaz */
+  --color-primary-soft: #E6F0FF;  /* hover ligero, fondos suaves */
+  --color-text-secondary: #6B7280;/* textos secundarios, iconos, placeholders */
+  --color-border: #CBD1D9;        /* lineas, bordes, divisores */
+  --color-surface: #FFFFFF;       /* tarjetas, modales, componentes */
+
+  /* Resaltantes (iguales en ambos modos) */
+  --color-success: #22C55E;
+  --color-warning: #F59E0B;
+  --color-error: #EF4444;
+  --color-info: #8B5CF6;
+  --color-action-secondary: #06B6D4;
+
+  color-scheme: light;
+
+  /* --- Tipografia --- */
+  --font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+
+  --font-size-title: 1.5rem;     /* titulos de seccion/pantalla */
+  --font-size-subtitle: 1.125rem;/* subtitulos, encabezados de tarjeta */
+  --font-size-body: 1rem;        /* texto normal */
+  --font-size-small: 0.875rem;   /* texto secundario, labels, ayuda */
+
+  --font-weight-normal: 400;
+  --font-weight-bold: 600;
+
+  --line-height-base: 1.5;
+
+  /* --- Espaciado --- */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 16px;
+  --space-4: 24px;
+  --space-5: 32px;
+
+  /* --- Bordes y sombras --- */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="dark"] {
+  --color-primary: #3878EC;       /* botones, enlaces, elementos activos */
+  --color-text-primary: #E6E6E6;  /* titulos, textos importantes */
+  --color-bg-secondary: #1E1E1E;  /* secciones, tarjetas, fondos alternativos */
+  --color-bg-primary: #121212;    /* fondo general de la interfaz */
+  --color-primary-soft: #1D2D5C;  /* hover ligero, fondos suaves */
+  --color-text-secondary: #9CA3AF;/* textos secundarios, iconos, placeholders */
+  --color-border: #2A2A2A;        /* lineas, bordes, divisores */
+  --color-surface: #242424;       /* tarjetas, modales, componentes */
+
+  /* Resaltantes (iguales en ambos modos) */
+  --color-success: #22C55E;
+  --color-warning: #F59E0B;
+  --color-error: #EF4444;
+  --color-info: #8B5CF6;
+  --color-action-secondary: #06B6D4;
+
+  color-scheme: dark;
+
+  /* Sombra mas visible sobre fondo oscuro */
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.5);
+}
+
+/* ==========================================================================
+   BASE
+   ========================================================================== */
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-family);
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-normal);
+  line-height: var(--line-height-base);
+  color: var(--color-text-primary);
+  background-color: var(--color-bg-primary);
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+h1, h2, h3 {
+  margin: 0 0 var(--space-2) 0;
+  font-weight: var(--font-weight-bold);
+}
+
+h1 { font-size: var(--font-size-title); }
+h2 { font-size: var(--font-size-subtitle); }
+h3 { font-size: var(--font-size-body); }
+
+p {
+  margin: 0 0 var(--space-3) 0;
+}
+
+small,
+.text-small {
+  font-size: var(--font-size-small);
+}
+
+a {
+  color: var(--color-primary);
+  text-decoration: none;
+}
+a:hover {
+  text-decoration: underline;
+}
+
+.text-secondary {
+  color: var(--color-text-secondary);
+}
+
+/* ==========================================================================
+   BOTONES
+   ========================================================================== */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  padding: var(--space-2) var(--space-3);
+  border: none;
+  border-radius: var(--radius-sm);
+  font-family: inherit;
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-bold);
+  cursor: pointer;
+  transition: background-color 0.15s ease, opacity 0.15s ease;
+}
+
+.btn-primary {
+  background-color: var(--color-primary);
+  color: #FFFFFF;
+}
+.btn-primary:hover {
+  opacity: 0.9;
+}
+
+.btn-secondary {
+  background-color: var(--color-bg-secondary);
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-border);
+}
+.btn-secondary:hover {
+  background-color: var(--color-primary-soft);
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ==========================================================================
+   FORMULARIOS
+   ========================================================================== */
+
+label {
+  display: block;
+  margin-bottom: var(--space-1);
+  font-size: var(--font-size-small);
+  color: var(--color-text-secondary);
+}
+
+input,
+select,
+textarea {
+  width: 100%;
+  font-family: inherit;
+  font-size: var(--font-size-body);
+  color: var(--color-text-primary);
+  background-color: var(--color-bg-primary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: var(--space-2) var(--space-3);
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-primary-soft);
+}
+
+input.input-error,
+select.input-error,
+textarea.input-error {
+  border-color: var(--color-error);
+}
+
+.field-error {
+  font-size: var(--font-size-small);
+  color: var(--color-error);
+  margin-top: var(--space-1);
+}
+
+/* ==========================================================================
+   TARJETAS / SUPERFICIES
+   ========================================================================== */
+
+.card {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-card);
+  padding: var(--space-4);
+}
+
+.section-alt {
+  background-color: var(--color-bg-secondary);
+}
+
+/* ==========================================================================
+   BADGES / ESTADOS
+   ========================================================================== */
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-small);
+  font-weight: var(--font-weight-bold);
+  color: #FFFFFF;
+}
+
+.badge-success { background-color: var(--color-success); }
+.badge-warning { background-color: var(--color-warning); }
+.badge-error   { background-color: var(--color-error); }
+.badge-info    { background-color: var(--color-info); }
+
+/* ==========================================================================
+   TABLAS
+   ========================================================================== */
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--font-size-body);
+}
+
+th, td {
+  text-align: left;
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 1px solid var(--color-border);
+}
+
+th {
+  font-size: var(--font-size-small);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+tr:hover td {
+  background-color: var(--color-primary-soft);
+}

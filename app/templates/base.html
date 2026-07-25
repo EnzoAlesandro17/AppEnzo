@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{% block title %}AppEnzo{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+  </head>
+  <body>
+    {% if session.user_id %}
+      <header class="app-header">
+        <div class="container">
+          <nav class="crumbs">
+            {% block breadcrumbs %}
+              <a href="{{ url_for('main.index') }}">AppEnzo</a>
+            {% endblock %}
+          </nav>
+          <a href="{{ url_for('auth.logout') }}" class="muted">Cerrar sesión</a>
+        </div>
+      </header>
+    {% endif %}
+    <div class="container">
+      {% with messages = get_flashed_messages() %}
+        {% if messages %}
+          {% for message in messages %}
+            <p class="error">{{ message }}</p>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
+      {% block content %}{% endblock %}
+    </div>
+    <script src="{{ url_for('static', filename='js/date-mask.js') }}"></script>
+  </body>
+</html>

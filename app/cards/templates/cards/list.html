@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block title %}Tarjetas — AppEnzo{% endblock %}
+
+{% block breadcrumbs %}
+  <a href="{{ url_for('main.index') }}">AppEnzo</a>
+  <span class="sep">/</span>
+  <span class="current">Tarjetas</span>
+{% endblock %}
+
+{% block content %}
+  <h1>Tarjetas</h1>
+  <ul class="card-list">
+    {% for card in cards %}
+      <li>
+        <a href="{{ url_for('cards.card_detail', card_id=card.id) }}">{{ card.name }}</a>
+        <div class="muted">
+          {{ card.bank or "" }}
+          {% if card.last_four_digits %}····{{ card.last_four_digits }}{% endif %}
+        </div>
+      </li>
+    {% else %}
+      <li class="muted">Todavía no cargaste ninguna tarjeta.</li>
+    {% endfor %}
+  </ul>
+  <div class="actions">
+    <a href="{{ url_for('cards.new_card') }}">+ Nueva tarjeta</a>
+  </div>
+{% endblock %}

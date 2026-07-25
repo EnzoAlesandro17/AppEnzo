@@ -1,0 +1,4 @@
+<div class="tab-row">
+  <a href="{{ url_for('cards.entries_list', card_id=card.id) }}" class="{{ 'active' if active == 'entries' else '' }}">Movimientos</a>
+  <a href="{{ url_for('cards.statement_list', card_id=card.id) }}" class="{{ 'active' if active == 'statements' else '' }}">Resúmenes</a>
+</div>
