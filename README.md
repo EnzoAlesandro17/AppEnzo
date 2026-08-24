@@ -132,10 +132,42 @@ tomada a propósito para mantener v1 simple. La vista es un listado
 cronológico de dos semanas con navegación "semana anterior / siguiente"; no
 hay calendario visual.
 
+## Deploy a Render
+
+El repo ya está preparado (`render.yaml`, `gunicorn` en `requirements.txt`,
+`.python-version`). Falta solo crear la cuenta en render.com (podés usar tu
+GitHub) — el registro en sí no pide tarjeta.
+
+**Importante — disco persistente**: la base es un archivo SQLite. El plan
+free de Render tiene filesystem efímero (se borra en cada deploy/reinicio),
+así que en ese plan los datos no persisten de verdad — sirve para practicar
+el flujo, no para uso real. Para que persista hace falta un "Persistent
+Disk", que requiere un plan pago (arranca ~USD 7/mes) — ahí Render sí pide
+tarjeta. El bloque `disk` en `render.yaml` está comentado; se activa cuando
+llegue ese momento (y hay que cambiar `DATABASE_PATH` al `mountPath` del
+disco).
+
+**Pasos** (Blueprint, recomendado):
+1. render.com → New → Blueprint → elegís este repo → Apply. Lee
+   `render.yaml` solo y crea el servicio.
+2. Antes del primer deploy (o después, en Environment): agregar
+   `ADMIN_EMAIL` y `ADMIN_PASSWORD` a mano en el dashboard. **Render free no
+   tiene shell interactivo**, así que `flask create-user` (que pide la
+   contraseña por prompt) no se puede correr ahí — con estas dos variables,
+   el usuario se crea solo la primera vez que arranca el servicio
+   (`app/db/cli.py`, `_ensure_admin_from_env`). No se versionan en el repo.
+3. Deploy. La primera vez corre `flask init-db` (crea el schema) y después
+   `gunicorn`.
+
+Alternativa manual (sin `render.yaml`): New → Web Service → build command
+`pip install -r requirements.txt`, start command
+`flask init-db && gunicorn 'app:create_app()' --bind 0.0.0.0:$PORT`, y
+cargar `SECRET_KEY`/`DATABASE_PATH`/`ADMIN_EMAIL`/`ADMIN_PASSWORD` a mano en
+Environment.
+
 ## Fuera de alcance de v1 (roadmap)
 
 - **Plata**: tarjetas (cierre, apertura, gastos), gastos no vencidos,
   postergados, presupuesto — reemplazo del Excel actual.
 - **Proyectos**: panacar, MyTools, etc., con avance y próximo paso.
 - **Entretenimiento**: pelis y series pendientes.
-- Deploy a Render (una vez que Tareas + Agenda estén validadas en uso real).

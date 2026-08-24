@@ -1,0 +1,41 @@
+# Blueprint de Render para AppEnzo.
+# En render.com: New > Blueprint > elegí este repo > Apply. Genera el
+# servicio con estos valores; podés editarlos después a mano en el dashboard.
+#
+# OJO — plan free vs. disco persistente:
+# El filesystem del plan free es efímero (se borra en cada deploy/reinicio).
+# Como la base es un archivo SQLite, sin un "disk" con plan pago los datos
+# se pierden en cada redeploy. Para plan free: dejá el bloque `disk` de
+# abajo comentado — sirve para probar el flujo de deploy, no para uso real.
+# Para persistir de verdad: sacá el comentario del bloque `disk` (requiere
+# upgradear el plan a uno pago, ver el campo `plan` de abajo) y de paso
+# apuntá DATABASE_PATH al mountPath del disco.
+
+services:
+  - type: web
+    name: appenzo
+    runtime: python
+    plan: free
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "flask init-db && gunicorn 'app:create_app()' --bind 0.0.0.0:$PORT"
+    envVars:
+      - key: FLASK_APP
+        value: app
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DATABASE_PATH
+        value: instance/appenzo.db
+      # Render free no tiene shell interactivo, así que `flask create-user`
+      # (pide contraseña por prompt) no se puede correr ahí. Cargando estas
+      # dos variables en el dashboard (Environment > Add Environment
+      # Variable), el usuario se crea solo la primera vez que arranca el
+      # servicio — no se guardan acá para no versionar una contraseña.
+      - key: ADMIN_EMAIL
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
+    # disk:
+    #   name: appenzo-data
+    #   mountPath: /var/data
+    #   sizeGB: 1
+    # Con el disco activo, cambiá DATABASE_PATH a: /var/data/appenzo.db

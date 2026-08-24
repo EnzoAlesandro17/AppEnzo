@@ -276,3 +276,24 @@ def init_db_command() -> None:
         conn.execute("PRAGMA foreign_keys = ON")
         conn.close()
     click.echo("Base de datos inicializada.")
+    _ensure_admin_from_env()
+
+
+def _ensure_admin_from_env() -> None:
+    """Crea el usuario inicial a partir de ADMIN_EMAIL/ADMIN_PASSWORD si
+    están definidas y ese email todavía no existe. Pensado para hosts sin
+    shell interactivo (ej. Render free), donde `flask create-user` — que
+    pide la contraseña por prompt — no se puede correr. No hace nada si las
+    variables no están seteadas, o si el usuario ya existe."""
+    email = os.environ.get("ADMIN_EMAIL")
+    password = os.environ.get("ADMIN_PASSWORD")
+    if not email or not password:
+        return
+
+    from app.auth import services as auth_services
+
+    try:
+        auth_services.create_user(email, password)
+        click.echo(f"Usuario inicial creado: {email}")
+    except auth_services.EmailAlreadyRegistered:
+        pass
