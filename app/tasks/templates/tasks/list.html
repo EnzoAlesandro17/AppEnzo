@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+
+{% block title %}Tareas — AppEnzo{% endblock %}
+
+{% block content %}
+  <h1>Tareas</h1>
+
+  <form method="post" action="{{ url_for('tasks.create_task') }}" class="inline-form">
+    <label>
+      Título
+      <input type="text" name="title" required autofocus />
+    </label>
+    <label>
+      Rubro
+      <select name="context" required>
+        {% for c in contexts %}
+          <option value="{{ c.key }}">{{ c.label }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>
+      Fecha (opcional)
+      <input type="text" name="due_date" placeholder="dd-mm-aaaa" data-date-mask />
+    </label>
+    <label>
+      Hora inicio (opcional)
+      <input type="text" name="due_time" placeholder="hh:mm" data-time-mask />
+    </label>
+    <label>
+      Hora fin (opcional)
+      <input type="text" name="end_time" placeholder="hh:mm" data-time-mask />
+    </label>
+    <label>
+      Notas (opcional)
+      <input type="text" name="notes" />
+    </label>
+    <div class="form-actions">
+      <button type="submit" class="btn btn-primary">Agregar</button>
+    </div>
+  </form>
+
+  {% for key, group in grouped.items() %}
+    <section class="card task-group">
+      <h2>{{ group.label }} <span class="count">({{ group.tasks | length }})</span></h2>
+      {% if group.tasks %}
+        {% for task in group.tasks %}
+          <div class="item-row {{ 'is-done' if task.status == 'done' }}" id="task-{{ task.id }}">
+            <form method="post" action="{{ url_for('tasks.update_status', task_id=task.id) }}">
+              <input type="hidden" name="status" value="{{ 'pending' if task.status == 'done' else 'done' }}" />
+              <button type="submit" class="check-toggle {{ 'is-checked' if task.status == 'done' }}" aria-label="Marcar hecha">✓</button>
+            </form>
+            <div class="item-main">
+              <a class="title" href="{{ url_for('tasks.task_detail', task_id=task.id) }}">{{ task.title }}</a>
+              {% if task.due_date or task.notes %}
+                <div class="item-meta">
+                  {% if task.due_date %}
+                    <span class="{{ 'text-error' if task.due_date < today and task.status != 'done' else '' }}">
+                      {{ task.due_date.strftime('%d-%m-%Y') }}
+                      {% if task.due_time %}· {{ task.due_time }}{% if task.end_time %}–{{ task.end_time }}{% endif %}{% endif %}
+                    </span>
+                  {% endif %}
+                  {% if task.notes %}<span>{{ task.notes }}</span>{% endif %}
+                </div>
+              {% endif %}
+            </div>
+            <div class="item-actions">
+              {% if task.status != 'done' %}
+                <form method="post" action="{{ url_for('tasks.update_status', task_id=task.id) }}">
+                  <select name="status" data-autosubmit>
+                    {% for status_key, label in statuses.items() %}
+                      {% if status_key != 'done' %}
+                        <option value="{{ status_key }}" {{ 'selected' if task.status == status_key }}>{{ label }}</option>
+                      {% endif %}
+                    {% endfor %}
+                  </select>
+                </form>
+              {% else %}
+                <span class="badge badge-success">Hecha</span>
+              {% endif %}
+              <form method="post" action="{{ url_for('tasks.delete_task', task_id=task.id) }}">
+                <button type="submit" class="btn-icon" title="Borrar" aria-label="Borrar">×</button>
+              </form>
+            </div>
+          </div>
+        {% endfor %}
+      {% else %}
+        <p class="empty-state">Sin tareas en {{ group.label }}.</p>
+      {% endif %}
+    </section>
+  {% endfor %}
+{% endblock %}

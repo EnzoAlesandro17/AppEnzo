@@ -2,6 +2,7 @@ import bcrypt
 
 from app.auth import models
 from app.common.ids import generate_id
+from app.settings import services as settings_services
 
 
 class EmailAlreadyRegistered(Exception):
@@ -14,6 +15,7 @@ def create_user(email: str, password: str) -> str:
     password_hash = bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
     user_id = generate_id()
     models.insert_user(user_id, email, password_hash)
+    settings_services.seed_default_contexts(user_id)
     return user_id
 
 

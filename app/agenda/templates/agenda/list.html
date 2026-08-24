@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+
+{% block title %}Agenda — AppEnzo{% endblock %}
+
+{% block content %}
+  <h1>Agenda</h1>
+
+  <form method="post" action="{{ url_for('agenda.create_entry') }}" class="inline-form">
+    <input type="hidden" name="from" value="{{ start_date_str }}" />
+    <label>
+      Tipo
+      <select name="kind" required>
+        {% for key, label in kinds.items() %}
+          <option value="{{ key }}">{{ label }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>
+      Modalidad (solo Trabajo)
+      <select name="work_mode">
+        {% for key, label in work_modes.items() %}
+          <option value="{{ key }}">{{ label }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>
+      Título (opcional)
+      <input type="text" name="title" placeholder="Se completa solo si lo dejás vacío" />
+    </label>
+    <label>
+      Fecha
+      <input type="text" name="entry_date" placeholder="dd-mm-aaaa" data-date-mask required />
+    </label>
+    <label>
+      Hora inicio (opcional)
+      <input type="text" name="entry_time" placeholder="hh:mm" data-time-mask />
+    </label>
+    <label>
+      Hora fin (opcional)
+      <input type="text" name="end_time" placeholder="hh:mm" data-time-mask />
+    </label>
+    <label>
+      Notas (opcional)
+      <input type="text" name="notes" />
+    </label>
+    <div class="form-actions">
+      <button type="submit" class="btn btn-primary">Agregar</button>
+    </div>
+  </form>
+
+  <div class="section-footer">
+    <a href="{{ url_for('agenda.list_entries', from=prev_week) }}">‹ Semana anterior</a>
+    ·
+    <a href="{{ url_for('agenda.list_entries', from=next_week) }}">Semana siguiente ›</a>
+  </div>
+
+  {% if days %}
+    <section class="card">
+      {% for day in days %}
+        <div class="agenda-day">
+          <h3>{{ day | format_day_label }}</h3>
+          {% for entry in grouped[day] %}
+            <div class="item-row">
+              <span class="badge {{ 'badge-primary' if entry.kind == 'work' else 'badge-warning' }}">{{ kind_label(entry) }}</span>
+              <div class="item-main">
+                <span class="title">{{ entry.title }}</span>
+                <div class="item-meta">
+                  {% if entry.entry_time %}
+                    <span>{{ entry.entry_time }}{% if entry.end_time %}–{{ entry.end_time }}{% endif %}</span>
+                  {% endif %}
+                  {% if entry.notes %}<span>{{ entry.notes }}</span>{% endif %}
+                </div>
+              </div>
+              <div class="item-actions">
+                <form method="post" action="{{ url_for('agenda.delete_entry', entry_id=entry.id) }}">
+                  <input type="hidden" name="from" value="{{ start_date_str }}" />
+                  <button type="submit" class="btn-icon" title="Borrar" aria-label="Borrar">×</button>
+                </form>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      {% endfor %}
+    </section>
+  {% else %}
+    <p class="empty-state">Sin eventos en estas dos semanas.</p>
+  {% endif %}
+{% endblock %}

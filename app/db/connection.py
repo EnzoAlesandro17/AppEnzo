@@ -1,16 +1,18 @@
 import os
+import sqlite3
 from contextlib import contextmanager
 from typing import Iterator
 
-import psycopg
 
-
-def get_connection() -> psycopg.Connection:
-    return psycopg.connect(os.environ["DATABASE_URL"])
+def get_connection() -> sqlite3.Connection:
+    conn = sqlite3.connect(os.environ["DATABASE_PATH"])
+    conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA foreign_keys = ON")
+    return conn
 
 
 @contextmanager
-def transaction() -> Iterator[psycopg.Connection]:
+def transaction() -> Iterator[sqlite3.Connection]:
     conn = get_connection()
     try:
         yield conn

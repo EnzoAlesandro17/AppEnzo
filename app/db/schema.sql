@@ -1,86 +1,116 @@
--- AppEnzo database schema
+-- AppEnzo database schema (SQLite)
 -- Convenciones: IDs de 12 caracteres alfanuméricos generados en la app
--- (app/common/ids.py), borrado lógico vía deleted_at en toda tabla.
+-- (app/common/ids.py), borrado lógico vía deleted_at en toda tabla de
+-- datos de usuario. Fechas guardadas como TEXT ISO 'YYYY-MM-DD', horas como
+-- TEXT 'HH:MM' 24hs (conversión a/desde date de Python explícita en cada
+-- models.py). Este archivo representa la forma FINAL del schema — instala
+-- una base nueva ya en esta forma. Una base existente se lleva hasta acá
+-- mediante las migraciones versionadas en app/db/cli.py.
 
-CREATE TYPE currency AS ENUM ('ARS', 'USD');
-CREATE TYPE entry_type AS ENUM ('expense', 'payment', 'charge');
+PRAGMA foreign_keys = ON;
 
-CREATE TABLE users (
-    id            CHAR(12) PRIMARY KEY,
+CREATE TABLE IF NOT EXISTS users (
+    id            TEXT PRIMARY KEY,
     email         TEXT NOT NULL UNIQUE,
     password_hash TEXT NOT NULL,
-    created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
-    deleted_at    TIMESTAMPTZ
+    created_at    TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    deleted_at    TEXT
 );
 
-CREATE TABLE cards (
-    id               CHAR(12) PRIMARY KEY,
-    user_id          CHAR(12) NOT NULL REFERENCES users (id),
-    name             TEXT NOT NULL,
-    bank             TEXT,
-    last_four_digits CHAR(4),
-    created_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
-    deleted_at       TIMESTAMPTZ
+-- Rubros de tareas configurables por el usuario (antes eran un CHECK fijo).
+-- `key` es el valor guardado en tasks.context; `label` es lo que se muestra.
+CREATE TABLE IF NOT EXISTS task_contexts (
+    id         TEXT PRIMARY KEY,
+    user_id    TEXT NOT NULL REFERENCES users (id),
+    key        TEXT NOT NULL,
+    label      TEXT NOT NULL,
+    position   INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    deleted_at TEXT,
+    UNIQUE (user_id, key)
 );
 
-CREATE INDEX idx_cards_user_id ON cards (user_id) WHERE deleted_at IS NULL;
-
--- Un resumen por período de facturación de una tarjeta. `period` es el primer
--- día del mes que nombra al resumen (ej. 2026-07-01 = "resumen 2026-07"), y da
--- a la vez el orden y el nombre, sin depender de closing_date / due_date, que
--- el banco puede correr en cualquier momento. No hay start_date propio: el
--- inicio de un resumen es el día siguiente al cierre del resumen anterior
--- (period - 1 mes), se calcula en la app. No hay columna de "abierto/cerrado":
--- el estado se deriva comparando `period` contra el mes calendario actual.
-CREATE TABLE statements (
-    id           CHAR(12) PRIMARY KEY,
-    card_id      CHAR(12) NOT NULL REFERENCES cards (id),
-    period       DATE NOT NULL,
-    closing_date DATE,
-    due_date     DATE,
-    created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
-    deleted_at   TIMESTAMPTZ,
-    UNIQUE (card_id, period)
+CREATE TABLE IF NOT EXISTS tasks (
+    id           TEXT PRIMARY KEY,
+    user_id      TEXT NOT NULL REFERENCES users (id),
+    context      TEXT NOT NULL,  -- referencia lógica a task_contexts.key, validada en services.py
+    title        TEXT NOT NULL,
+    notes        TEXT,
+    status       TEXT NOT NULL DEFAULT 'pending'
+                     CHECK (status IN ('pending', 'in_progress', 'blocked', 'done')),
+    due_date     TEXT,  -- ISO 'YYYY-MM-DD', nullable (tareas sin fecha)
+    due_time     TEXT,  -- 'HH:MM' 24hs, nullable (hora de inicio)
+    end_time     TEXT,  -- 'HH:MM' 24hs, nullable (hora de fin)
+    created_at   TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    completed_at TEXT,
+    deleted_at   TEXT
 );
 
-CREATE INDEX idx_statements_card_id ON statements (card_id) WHERE deleted_at IS NULL;
+CREATE INDEX IF NOT EXISTS idx_tasks_user_status
+    ON tasks (user_id, status) WHERE deleted_at IS NULL;
 
--- Compra original dividida en N cuotas. Cada cuota resultante es una fila en
--- `entries`, encadenada a resúmenes consecutivos por período, no por fecha.
-CREATE TABLE installment_plans (
-    id                CHAR(12) PRIMARY KEY,
-    card_id           CHAR(12) NOT NULL REFERENCES cards (id),
-    currency          currency NOT NULL,
-    total_amount      NUMERIC(14, 2) NOT NULL,
-    installment_count SMALLINT NOT NULL CHECK (installment_count > 0),
-    description       TEXT,
-    purchase_date     DATE NOT NULL,
-    created_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
-    deleted_at        TIMESTAMPTZ
+CREATE INDEX IF NOT EXISTS idx_tasks_user_due
+    ON tasks (user_id, due_date) WHERE deleted_at IS NULL AND due_date IS NOT NULL;
+
+CREATE TABLE IF NOT EXISTS task_steps (
+    id         TEXT PRIMARY KEY,
+    user_id    TEXT NOT NULL REFERENCES users (id),
+    task_id    TEXT NOT NULL REFERENCES tasks (id),
+    title      TEXT NOT NULL,
+    done       INTEGER NOT NULL DEFAULT 0 CHECK (done IN (0, 1)),
+    position   INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    deleted_at TEXT
 );
 
--- Gastos, pagos y cargos fijos (ej. impuesto al sello). Un cargo fijo se carga
--- directo a un statement_id puntual; su `date` es solo informativa.
-CREATE TABLE entries (
-    id                  CHAR(12) PRIMARY KEY,
-    card_id             CHAR(12) NOT NULL REFERENCES cards (id),
-    statement_id        CHAR(12) NOT NULL REFERENCES statements (id),
-    installment_plan_id CHAR(12) REFERENCES installment_plans (id),
-    installment_number  SMALLINT,
-    entry_type          entry_type NOT NULL,
-    currency            currency NOT NULL,
-    amount              NUMERIC(14, 2) NOT NULL,
-    description         TEXT,
-    date                DATE NOT NULL,
-    exchange_rate       NUMERIC(10, 4),
-    created_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
-    deleted_at          TIMESTAMPTZ,
-    CHECK (
-        (installment_plan_id IS NULL AND installment_number IS NULL)
-        OR (installment_plan_id IS NOT NULL AND installment_number IS NOT NULL)
-    )
+CREATE INDEX IF NOT EXISTS idx_task_steps_task
+    ON task_steps (task_id) WHERE deleted_at IS NULL;
+
+-- Agenda: 'work' unifica turno/franco (work_mode distingue cuál es), pagos
+-- viven en Presupuesto (con due_date), 'medical'/'other' para el resto.
+CREATE TABLE IF NOT EXISTS agenda_entries (
+    id         TEXT PRIMARY KEY,
+    user_id    TEXT NOT NULL REFERENCES users (id),
+    kind       TEXT NOT NULL CHECK (kind IN ('work', 'medical', 'other')),
+    work_mode  TEXT CHECK (work_mode IN ('scheduled', 'off')),  -- solo aplica si kind='work'
+    title      TEXT NOT NULL,
+    notes      TEXT,
+    entry_date TEXT NOT NULL,  -- ISO 'YYYY-MM-DD'
+    entry_time TEXT,           -- 'HH:MM' 24hs, nullable (hora de inicio)
+    end_time   TEXT,           -- 'HH:MM' 24hs, nullable (hora de fin)
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    deleted_at TEXT
 );
 
-CREATE INDEX idx_entries_statement_id ON entries (statement_id) WHERE deleted_at IS NULL;
-CREATE INDEX idx_entries_card_id ON entries (card_id) WHERE deleted_at IS NULL;
-CREATE INDEX idx_entries_installment_plan_id ON entries (installment_plan_id) WHERE deleted_at IS NULL;
+CREATE INDEX IF NOT EXISTS idx_agenda_user_date
+    ON agenda_entries (user_id, entry_date) WHERE deleted_at IS NULL;
+
+-- Presupuesto: cada gasto pertenece a un período (mes), puede tener
+-- vencimiento propio, y puede ser repetitivo (series_id agrupa las
+-- instancias mensuales de un mismo gasto recurrente, ej. alquiler).
+CREATE TABLE IF NOT EXISTS budget_items (
+    id           TEXT PRIMARY KEY,
+    user_id      TEXT NOT NULL REFERENCES users (id),
+    period       TEXT NOT NULL,  -- ISO 'YYYY-MM-01', primer día del mes
+    title        TEXT NOT NULL,
+    amount       NUMERIC NOT NULL,
+    due_date     TEXT,  -- ISO 'YYYY-MM-DD', nullable
+    status       TEXT NOT NULL DEFAULT 'pending'
+                     CHECK (status IN ('pending', 'paid', 'postponed')),
+    is_recurring INTEGER NOT NULL DEFAULT 0 CHECK (is_recurring IN (0, 1)),
+    series_id    TEXT,  -- agrupa instancias mensuales de un mismo gasto repetitivo
+    notes        TEXT,
+    created_at   TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    deleted_at   TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_budget_items_user_period
+    ON budget_items (user_id, period) WHERE deleted_at IS NULL;
+
+CREATE INDEX IF NOT EXISTS idx_budget_items_series
+    ON budget_items (series_id) WHERE deleted_at IS NULL AND series_id IS NOT NULL;
+
+CREATE TABLE IF NOT EXISTS schema_meta (
+    key   TEXT PRIMARY KEY,
+    value TEXT
+);

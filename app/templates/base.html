@@ -10,12 +10,17 @@
     {% if session.user_id %}
       <header class="app-header">
         <div class="container">
+          <a href="{{ url_for('main.index') }}" class="brand">AppEnzo</a>
           <nav class="crumbs">
             {% block breadcrumbs %}
-              <a href="{{ url_for('main.index') }}">AppEnzo</a>
+              <a href="{{ url_for('main.index') }}" class="{{ 'active' if request.endpoint == 'main.index' }}">Hoy</a>
+              <a href="{{ url_for('tasks.list_tasks') }}" class="{{ 'active' if request.endpoint and request.endpoint.startswith('tasks.') }}">Tareas</a>
+              <a href="{{ url_for('agenda.list_entries') }}" class="{{ 'active' if request.endpoint and request.endpoint.startswith('agenda.') }}">Agenda</a>
+              <a href="{{ url_for('budget.list_items') }}" class="{{ 'active' if request.endpoint and request.endpoint.startswith('budget.') }}">Presupuesto</a>
+              <a href="{{ url_for('settings.index') }}" class="{{ 'active' if request.endpoint and request.endpoint.startswith('settings.') }}">Configuración</a>
             {% endblock %}
           </nav>
-          <a href="{{ url_for('auth.logout') }}" class="muted">Cerrar sesión</a>
+          <a href="{{ url_for('auth.logout') }}" class="muted logout-link">Cerrar sesión</a>
         </div>
       </header>
     {% endif %}
@@ -30,5 +35,6 @@
       {% block content %}{% endblock %}
     </div>
     <script src="{{ url_for('static', filename='js/date-mask.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
   </body>
 </html>

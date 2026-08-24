@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block title %}Configuración — AppEnzo{% endblock %}
+
+{% block content %}
+  <h1>Configuración</h1>
+
+  <section class="card">
+    <h2>Rubros de tareas</h2>
+    <p class="text-small muted">Los rubros agrupan las tareas en {{ url_for('tasks.list_tasks') }}. Solo se puede borrar un rubro si ya no tiene tareas.</p>
+
+    <form method="post" action="{{ url_for('settings.add_context') }}" class="inline-form">
+      <label>
+        Nuevo rubro
+        <input type="text" name="label" required autofocus />
+      </label>
+      <button type="submit" class="btn btn-primary">Agregar</button>
+    </form>
+
+    {% if contexts %}
+      {% for context in contexts %}
+        <div class="item-row">
+          <div class="item-main">
+            <form method="post" action="{{ url_for('settings.rename_context', context_id=context.id) }}" class="rename-form">
+              <input type="text" name="label" value="{{ context.label }}" data-autosubmit-blur />
+            </form>
+          </div>
+          <div class="item-actions">
+            <form method="post" action="{{ url_for('settings.delete_context', context_id=context.id) }}">
+              <input type="hidden" name="key" value="{{ context.key }}" />
+              <button type="submit" class="btn-icon" title="Borrar" aria-label="Borrar">×</button>
+            </form>
+          </div>
+        </div>
+      {% endfor %}
+    {% else %}
+      <p class="empty-state">Sin rubros todavía.</p>
+    {% endif %}
+  </section>
+{% endblock %}

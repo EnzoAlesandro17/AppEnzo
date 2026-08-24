@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+
+{% block title %}Presupuesto — AppEnzo{% endblock %}
+
+{% macro item_row(item, show_period) %}
+  <div class="item-row {{ 'is-done' if item.status == 'paid' }}" id="item-{{ item.id }}">
+    <form method="post" action="{{ url_for('budget.update_status', item_id=item.id) }}">
+      <input type="hidden" name="period" value="{{ period_str }}" />
+      <input type="hidden" name="status" value="{{ 'pending' if item.status == 'paid' else 'paid' }}" />
+      <button type="submit" class="check-toggle {{ 'is-checked' if item.status == 'paid' }}" aria-label="Marcar pagado">✓</button>
+    </form>
+    <div class="item-main">
+      <span class="title">{{ item.title }}</span>
+      <div class="item-meta">
+        <span class="amount">{{ item.amount | format_amount }}</span>
+        {% if show_period %}<span>de {{ item.period | format_month_es }}</span>{% endif %}
+        {% if item.due_date %}<span>vence {{ item.due_date.strftime('%d-%m-%Y') }}</span>{% endif %}
+        {% if item.is_recurring %}<span>↻ repetitivo</span>{% endif %}
+        {% if item.notes %}<span>{{ item.notes }}</span>{% endif %}
+      </div>
+    </div>
+    <div class="item-actions">
+      {% if item.status != 'paid' %}
+        <form method="post" action="{{ url_for('budget.update_status', item_id=item.id) }}">
+          <input type="hidden" name="period" value="{{ period_str }}" />
+          <select name="status" data-autosubmit>
+            <option value="pending" {{ 'selected' if item.status == 'pending' }}>Pendiente</option>
+            <option value="postponed" {{ 'selected' if item.status == 'postponed' }}>Aplazado</option>
+          </select>
+        </form>
+      {% else %}
+        <span class="badge badge-success">Pagado</span>
+      {% endif %}
+      <a class="btn-icon" href="{{ url_for('budget.edit_item', item_id=item.id) }}" title="Editar" aria-label="Editar">✎</a>
+      <form method="post" action="{{ url_for('budget.delete_item', item_id=item.id) }}">
+        <input type="hidden" name="period" value="{{ period_str }}" />
+        <button type="submit" class="btn-icon" title="Borrar" aria-label="Borrar">×</button>
+      </form>
+    </div>
+  </div>
+{% endmacro %}
+
+{% block content %}
+  <h1>Presupuesto — {{ view.period | format_month_es }}</h1>
+
+  <div class="section-footer">
+    <a href="{{ url_for('budget.list_items', period=prev_period) }}">‹ Mes anterior</a>
+    ·
+    <a href="{{ url_for('budget.list_items', period=next_period) }}">Mes siguiente ›</a>
+  </div>
+
+  <div class="budget-totals">
+    <div class="card budget-total-card is-total">
+      <span class="text-small muted">Total del mes</span>
+      <strong>{{ view.total | format_amount }}</strong>
+    </div>
+    <div class="card budget-total-card is-subtotal">
+      <span class="text-small muted">Subtotal pendiente</span>
+      <strong>{{ view.subtotal | format_amount }}</strong>
+    </div>
+  </div>
+
+  <form method="post" action="{{ url_for('budget.create_item') }}" class="inline-form">
+    <input type="hidden" name="period" value="{{ period_str }}" />
+    <label>
+      Gasto
+      <input type="text" name="title" required autofocus />
+    </label>
+    <label>
+      Monto
+      <input type="text" name="amount" placeholder="0,00" required />
+    </label>
+    <label>
+      Vencimiento (opcional)
+      <input type="text" name="due_date" placeholder="dd-mm-aaaa" data-date-mask />
+    </label>
+    <label>
+      Notas (opcional)
+      <input type="text" name="notes" />
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" name="is_recurring" />
+      Repetitivo todos los meses
+    </label>
+    <div class="form-actions">
+      <button type="submit" class="btn btn-primary">Agregar</button>
+    </div>
+  </form>
+
+  {% if view.rollover_items %}
+    <section class="card" style="margin-bottom: var(--space-3);">
+      <h2>Pendiente de meses anteriores</h2>
+      {% for item in view.rollover_items %}
+        {{ item_row(item, true) }}
+      {% endfor %}
+    </section>
+  {% endif %}
+
+  {% if view.native_items %}
+    <section class="card">
+      {% for item in view.native_items %}
+        {{ item_row(item, false) }}
+      {% endfor %}
+    </section>
+  {% else %}
+    <p class="empty-state">Sin gastos cargados para este mes.</p>
+  {% endif %}
+{% endblock %}

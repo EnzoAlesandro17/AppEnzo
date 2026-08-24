@@ -3,8 +3,81 @@
 {% block title %}AppEnzo{% endblock %}
 
 {% block content %}
-  <h1>Inicio</h1>
-  <ul class="card-list">
-    <li><a href="{{ url_for('cards.list_cards') }}">Tarjetas</a></li>
-  </ul>
+  <h1>Hoy es {{ dashboard.today | format_long_date_es }}</h1>
+
+  <div class="dashboard-top-row">
+    <section class="card dashboard-card">
+      <h2>Horario de hoy</h2>
+      {% if dashboard.schedule_today %}
+        <ul class="today-list">
+          {% for item in dashboard.schedule_today %}
+            <li class="today-item">
+              {% if item.time %}<span class="time">{{ item.time }}{% if item.end_time %}–{{ item.end_time }}{% endif %}</span>{% endif %}
+              <span class="badge {{ item | badge_class }}">{{ item.subtitle }}</span>
+              <span class="title">{{ item.title }}</span>
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="empty-state">No hay turnos, francos ni trámites hoy.</p>
+      {% endif %}
+    </section>
+
+    <section class="card dashboard-card">
+      <h2>Tareas de hoy</h2>
+      {% if dashboard.tasks_today %}
+        <ul class="today-list">
+          {% for item in dashboard.tasks_today %}
+            <li class="today-item">
+              {% if item.time %}<span class="time">{{ item.time }}{% if item.end_time %}–{{ item.end_time }}{% endif %}</span>{% endif %}
+              <span class="badge {{ item | badge_class }}">{{ item.subtitle }}</span>
+              <span class="title">{{ item.title }}</span>
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="empty-state">No hay tareas para hoy.</p>
+      {% endif %}
+    </section>
+
+    <section class="card dashboard-card {{ 'is-alert' if dashboard.overdue_total }}">
+      <h2>Postergado</h2>
+      {% if dashboard.overdue %}
+        <ul class="today-list">
+          {% for item in dashboard.overdue %}
+            <li class="today-item">
+              <span class="badge {{ item | badge_class }}">{{ item.subtitle }}</span>
+              <span class="title">{{ item.title }}</span>
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="empty-state">Nada postergado.</p>
+      {% endif %}
+    </section>
+  </div>
+
+  <section class="card week-section">
+    <h2>Semana</h2>
+    <div class="week-grid">
+      {% for col in dashboard.week_days %}
+        <div class="week-day {{ 'is-today' if col.is_today }}">
+          <h3>{{ col.label }}</h3>
+          {% if col.items %}
+            <ul class="today-list">
+              {% for item in col.items %}
+                <li class="today-item {{ 'is-done' if item.done }}">
+                  {% if item.time %}<span class="time">{{ item.time }}{% if item.end_time %}–{{ item.end_time }}{% endif %}</span>{% endif %}
+                  <span class="badge {{ item | badge_class }}">{{ item.subtitle }}</span>
+                  <span class="title">{{ item.title }}</span>
+                </li>
+              {% endfor %}
+            </ul>
+          {% else %}
+            <p class="empty-state">–</p>
+          {% endif %}
+        </div>
+      {% endfor %}
+    </div>
+  </section>
 {% endblock %}

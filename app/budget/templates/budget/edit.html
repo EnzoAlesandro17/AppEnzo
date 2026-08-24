@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block title %}Editar gasto — AppEnzo{% endblock %}
+
+{% block content %}
+  <a class="back-link" href="{{ url_for('budget.list_items', period=item.period.strftime('%Y-%m')) }}">← Presupuesto</a>
+  <h1>Editar gasto</h1>
+  <form method="post" action="{{ url_for('budget.update_item', item_id=item.id) }}" class="card" style="max-width: 480px;">
+    <input type="hidden" name="period" value="{{ item.period.strftime('%Y-%m') }}" />
+    <label>
+      Gasto
+      <input type="text" name="title" value="{{ item.title }}" required />
+    </label>
+    <label>
+      Monto
+      <input type="text" name="amount" value="{{ item.amount }}" required />
+    </label>
+    <label>
+      Vencimiento (opcional)
+      <input type="text" name="due_date" placeholder="dd-mm-aaaa" data-date-mask value="{{ item.due_date.strftime('%d-%m-%Y') if item.due_date else '' }}" />
+    </label>
+    <label>
+      Notas (opcional)
+      <input type="text" name="notes" value="{{ item.notes or '' }}" />
+    </label>
+    <label class="checkbox-label">
+      <input type="checkbox" name="is_recurring" {{ 'checked' if item.is_recurring }} />
+      Repetitivo todos los meses (mismo monto hasta que lo edites o lo des de baja acá)
+    </label>
+    <button type="submit" class="btn btn-primary" style="margin-top: var(--space-3);">Guardar</button>
+  </form>
+{% endblock %}
